@@ -1,0 +1,12 @@
+C:\Users\PCS186-OPE01\Documents\Telepeaje 2.1\Telepeaje 2.0\bin\Debug\Telepeaje 2.0.exe.config
+C:\Users\PCS186-OPE01\Documents\Telepeaje 2.1\Telepeaje 2.0\bin\Debug\Telepeaje 2.0.exe
+C:\Users\PCS186-OPE01\Documents\Telepeaje 2.1\Telepeaje 2.0\bin\Debug\Telepeaje 2.0.pdb
+C:\Users\PCS186-OPE01\Documents\Telepeaje 2.1\Telepeaje 2.0\bin\Debug\Telepeaje 2.0.xml
+C:\Users\PCS186-OPE01\Documents\Telepeaje 2.1\Telepeaje 2.0\obj\Debug\Telepeaje 2.1.vbprojResolveAssemblyReference.cache
+C:\Users\PCS186-OPE01\Documents\Telepeaje 2.1\Telepeaje 2.0\obj\Debug\Telepeaje_2._0.Form1.resources
+C:\Users\PCS186-OPE01\Documents\Telepeaje 2.1\Telepeaje 2.0\obj\Debug\Telepeaje_2._0.Resources.resources
+C:\Users\PCS186-OPE01\Documents\Telepeaje 2.1\Telepeaje 2.0\obj\Debug\Telepeaje 2.1.vbproj.GenerateResource.Cache
+C:\Users\PCS186-OPE01\Documents\Telepeaje 2.1\Telepeaje 2.0\obj\Debug\Telepeaje 2.1.vbproj.CoreCompileInputs.cache
+C:\Users\PCS186-OPE01\Documents\Telepeaje 2.1\Telepeaje 2.0\obj\Debug\Telepeaje 2.0.exe
+C:\Users\PCS186-OPE01\Documents\Telepeaje 2.1\Telepeaje 2.0\obj\Debug\Telepeaje 2.0.xml
+C:\Users\PCS186-OPE01\Documents\Telepeaje 2.1\Telepeaje 2.0\obj\Debug\Telepeaje 2.0.pdb

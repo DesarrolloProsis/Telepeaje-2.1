@@ -1,0 +1,7 @@
+10.0
+5
+1       SQLCHAR             0       50      ";"     1     Tag                                                Modern_Spanish_CI_AS
+2       SQLCHAR             0       50      ";"     2     Tipo                                               Modern_Spanish_CI_AS
+3       SQLCHAR             0       50      ";"     3     Estatus                                            Modern_Spanish_CI_AS
+4       SQLCHAR             0       50      ";"     4     Saldo                                              Modern_Spanish_CI_AS
+5       SQLCHAR             0       50      "\r\n"  5     EstatusResidente                                   Modern_Spanish_CI_AS
