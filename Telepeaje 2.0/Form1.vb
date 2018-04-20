@@ -565,6 +565,22 @@ NumeroLineas:
                 CopiarCarpeta()
                 banderaAntifraude = False
             End If
+        ElseIf NombreCaseta = "QUERETARO" Then
+            PathTemporal = "c:\temporal\MontoMinimo\LSTABINT."
+            ArchivoMontoMinimo()
+            encabezados()
+            vDestino = DestinoMontominimo & "LSTABINT."
+            CopiarCarpeta()
+            BorrararchivosMontominimo()
+            ''creamos el archivo Antifraude''
+            PathTemporal = "c:\temporal\Antifraude\LSTABINT."
+            ArchivoAntifraude()
+            If banderaAntifraude = True Then
+                encabezados()
+                vDestino = DestinoAntifraude & "LSTABINT."
+                CopiarCarpeta()
+                banderaAntifraude = False
+            End If
         End If
 
 
@@ -816,7 +832,7 @@ LINEA:
             extension = extension.PadLeft(3, "0")
         End If
 
-        ConexionOracle.ConnectionString = "Data Source=(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST= " & CASETAIP & ")(PORT=1521)))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=GEAPROD)));User Id=GEADBA;Password=FGEUORJVNE;"
+        ConexionOracle.ConnectionString = "Data Source=(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST= " & CASETAIP & ")(PORT=1521)))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=GEAPROD)));User Id=GEAINT;Password=GEAINT;"
 
         vDestino = Destino & "LSTABINT."
 
