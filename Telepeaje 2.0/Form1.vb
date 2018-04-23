@@ -81,17 +81,23 @@ NumeroLineas:
             oConexion.Close()
             Me.Close()
         Catch ex As Exception
-            If CONTADOR <= 3 Then
-                CONTADOR = CONTADOR + 1
+            Dim st As StackTrace = New StackTrace(ex, True)
+            Dim frame As StackFrame = st.GetFrame(st.FrameCount - 1)
+
+            If Contador <= 1 Then
+                Contador = Contador + 1
                 Thread.Sleep(3000)
                 GoTo NumeroLineas
             Else
                 Dim path As String = "c:\temporal\LogsListas.txt"
+                Dim line As Integer = frame.GetFileLineNumber()
                 If File.Exists(path) Then
+
                     Using write As StreamWriter = New StreamWriter(path, True)
-                        write.Write(DateTime.Now & " / " & ex.Message & vbCrLf)
+                        write.Write(DateTime.Now & " / Numero Linea: " & line & "  / " & ex.Message & vbCrLf)
                     End Using
                 Else
+
                     ' Create or overwrite the file.
                     Dim fs As FileStream = File.Create(path)
                     ' Add text to the file.
@@ -105,279 +111,303 @@ NumeroLineas:
     End Sub
 
     Sub InsertarLista()
-        'Try
-        'consulta para mandar la primera linea vacia
-        consulta = "select * from Lista where Saldo = 999999999999"
-        cmd = New SqlCommand(consulta, oConexion)
-        Dim resultado = cmd.ExecuteScalar()
-        If resultado = Nothing Then
-            bandera = False
-        Else
-            bandera = True
-        End If
-
-        Dim bString As String
-        bString = Mid(LeerArchivos, 1, 1)
-        'Si la lista es completa borra la anterior 
-        If bString = "C" Then
-            consulta = "TRUNCATE TABLE lista 
-                            TRUNCATE TABLE listaTemporal
-                            TRUNCATE TABLE listaantifraude 
-                            TRUNCATE TABLE ListaValidaciones"
+        Try
+            'consulta para mandar la primera linea vacia
+            consulta = "select * from Lista where Saldo = 999999999999"
             cmd = New SqlCommand(consulta, oConexion)
-            cmd.ExecuteNonQuery()
-
-            'inserta la lista que encontro a la base SQL
-            consulta = "bulk insert lista from '" & Origen & "" & LeerArchivos & "' with ( FORMATFILE = '" & fmt & "');"
-            cmd = New SqlCommand(consulta, oConexion)
-            cmd.CommandTimeout = 3 * 60
-            cmd.ExecuteNonQuery()
-            'If bandera = False Then
-            '    consulta = "INSERT INTO lista VALUES (0000000000000000000,00,00,999999999999,00,0000000000000000000000000000000000000000000000000);"
-            '    cmd = New SqlCommand(consulta, oConexion)
-            '    cmd.ExecuteNonQuery()
-            '    consulta = "update Lista set saldo = cast(saldo as varchar(8)) where saldo > '99999999'"
-            '    cmd = New SqlCommand(consulta, oConexion)
-            '    cmd.CommandTimeout = 3 * 60
-            '    cmd.ExecuteNonQuery()
-            '    bandera = True
-            'End If
-            ''''''''Se insertan los residentes '''''''
-
-            If NombreCaseta = "ALPUYECA" Or NombreCaseta = "AEROPUERTO" Or NombreCaseta = "XOCHITEPEC" Or NombreCaseta = "MAC" Then
-
-                consulta = "INSERT INTO ListaAntifraude SELECT * FROM  ListaResidentes lT WHERE NOT EXISTS (SELECT LT.TAG FROM ListaAntifraude LI WHERE LT.Tag = LI.Tag)"
-                cmd = New SqlCommand(consulta, oConexion)
-                cmd.CommandTimeout = 3 * 60
-                cmd.ExecuteNonQuery()
-
-            End If
-
-            ''''''''''''''' FIN RESIDENTES'''''''''''''''''''''''''''''
-
-
-            ''''''''''''''' Lista Antifraude'''''''''''''''''''''''''''
-
-            consulta = "  INSERT INTO ListaAntifraude SELECT * FROM  lista lT WHERE NOT EXISTS (SELECT LT.TAG FROM ListaAntifraude LI WHERE LT.Tag = LI.Tag)"
-            cmd = New SqlCommand(consulta, oConexion)
-            cmd.CommandTimeout = 3 * 60
-            cmd.ExecuteNonQuery()
-            consulta = "update ListaAntifraude set saldo = cast(saldo as varchar(8)) where saldo > 99999999"
-            cmd = New SqlCommand(consulta, oConexion)
-            cmd.CommandTimeout = 3 * 60
-            cmd.ExecuteNonQuery()
-            consulta = "update ListaAntifraude set saldo = cast(saldo as varchar(8)) where saldo < 0"
-            cmd = New SqlCommand(consulta, oConexion)
-            cmd.CommandTimeout = 3 * 60
-            cmd.ExecuteNonQuery()
-            ''''''''''''''' Fin Antifraude''''''''''''''''''''''''''''''''''
-
-
-            If Not NombreCaseta = "XOCHITEPEC" Or NombreCaseta = "AEROPUERTO" Or NombreCaseta = "EMILIANOZAPATA" Or NombreCaseta = "TRESMARIAS" Then
-
-
-                ''''''''''''''' Monto Minimo''''''''''''''''''''''''''''''''''
-                'consulta = "UPDATE ListaValidaciones SET Saldo = ListaTemporal.Saldo, Estatus = ListaTemporal.Estatus, Tipo = ListaTemporal.tipo  FROM ListaTemporal where ListaTemporal.Tag = ListaValidaciones.Tag and ListaValidaciones.EstatusResidente = '00'"
-                'cmd = New SqlCommand(consulta, oConexion)
-                'cmd.CommandTimeout = 3 * 60
-                'cmd.ExecuteNonQuery()
-                consulta = "  INSERT INTO ListaValidaciones SELECT * FROM  lista lT WHERE NOT EXISTS (SELECT LT.TAG FROM ListaValidaciones LI WHERE LT.Tag = LI.Tag)"
-                cmd = New SqlCommand(consulta, oConexion)
-                cmd.CommandTimeout = 3 * 60
-                cmd.ExecuteNonQuery()
-                consulta = "update ListaValidaciones set saldo = cast(saldo as varchar(8)) where saldo > 99999999"
-                cmd = New SqlCommand(consulta, oConexion)
-                cmd.CommandTimeout = 3 * 60
-                cmd.ExecuteNonQuery()
-                consulta = "update ListaValidaciones set saldo = cast(saldo as varchar(8)) where saldo < 0"
-                cmd = New SqlCommand(consulta, oConexion)
-                cmd.CommandTimeout = 3 * 60
-                cmd.ExecuteNonQuery()
-
-                ''''''''''''''' Fin Minimo'''''''''''''''''''''''''''''''''
-
-            End If
-        End If
-        'Lista con archivos temporales
-        If bString = "I" Then
-            'Borro lista anterior
-
-            consulta = "TRUNCATE TABLE listaTemporal"
-            cmd = New SqlCommand(consulta, oConexion)
-            cmd.ExecuteNonQuery()
-            'inserto nueva lista
-            consulta = "bulk insert listaTemporal from '" & Origen & "" & LeerArchivos & "' with ( FORMATFILE = '" & fmt & "');"
-            cmd = New SqlCommand(consulta, oConexion)
-            cmd.CommandTimeout = 3 * 60
-            cmd.ExecuteNonQuery()
-            'consulta = "update ListaTemporal set saldo = cast(saldo as varchar(8)) where saldo > 99999999"
-            'cmd = New SqlCommand(consulta, oConexion)
-            'cmd.CommandTimeout = 3 * 60
-            'cmd.ExecuteNonQuery()
-            consulta = "update ListaTemporal set saldo = cast(saldo as varchar(8)) where saldo > 99999999"
-            cmd = New SqlCommand(consulta, oConexion)
-            cmd.CommandTimeout = 3 * 60
-            cmd.ExecuteNonQuery()
-            consulta = "update ListaTemporal set saldo = cast(saldo as varchar(8)) where saldo < 0"
-            cmd = New SqlCommand(consulta, oConexion)
-            cmd.CommandTimeout = 3 * 60
-            cmd.ExecuteNonQuery()
-            'uno con la complementaria 
-            consulta = "UPDATE lista SET Saldo = ListaTemporal.Saldo, Estatus = ListaTemporal.Estatus, Tipo = ListaTemporal.tipo  FROM ListaTemporal where ListaTemporal.Tag = Lista.Tag and Lista.EstatusResidente = '00'"
-            cmd = New SqlCommand(consulta, oConexion)
-            cmd.CommandTimeout = 3 * 60
-            cmd.ExecuteNonQuery()
-            'Se insertan los tags que no existian anteriormente 
-            consulta = "INSERT INTO lista SELECT * FROM ListaTemporal lT WHERE NOT EXISTS (SELECT LT.TAG FROM Lista LI WHERE LT.Tag = LI.Tag)"
-            cmd = New SqlCommand(consulta, oConexion)
-            cmd.CommandTimeout = 3 * 60
-            cmd.ExecuteNonQuery()
-
-            'If NombreCaseta = "ALPUYECA" Or NombreCaseta = "AEROPUERTO" Or NombreCaseta = "XOCHITEPEC" Or NombreCaseta = "MAC" Then
-
-            '    '''''''''''''''''''RESIDENTES''''''''''''''''''''''''''''''''
-            '    consulta = "UPDATE listaResidentes SET Saldo = ListaTemporal.Saldo, Estatus = ListaTemporal.Estatus, Tipo = ListaTemporal.tipo  FROM ListaTemporal where ListaTemporal.Tag = ListaResidentes.Tag and ListaResidentes.EstatusResidente = '00'"
-            '    cmd = New SqlCommand(consulta, oConexion)
-            '    cmd.CommandTimeout = 3 * 60
-            '    cmd.ExecuteNonQuery()
-            '    'consulta = "update ListaResidentes set saldo = cast(saldo as varchar(8)) where saldo > 99999999"
-            '    'cmd = New SqlCommand(consulta, oConexion)
-            '    'cmd.CommandTimeout = 3 * 60
-            '    'cmd.ExecuteNonQuery()
-            '    'consulta = "update ListaResidentes set saldo = cast(saldo as varchar(8)) where saldo < 0"
-            '    'cmd = New SqlCommand(consulta, oConexion)
-            '    'cmd.CommandTimeout = 3 * 60
-            '    'cmd.ExecuteNonQuery()
-            '    consulta = "INSERT INTO listaresidentes SELECT * FROM  lista lT WHERE NOT EXISTS (SELECT LT.TAG FROM listaresidentes LI WHERE LT.Tag = LI.Tag)"
-            '    cmd = New SqlCommand(consulta, oConexion)
-            '    cmd.CommandTimeout = 3 * 60
-            '    cmd.ExecuteNonQuery()
-            '    ''''''''''''''' FIN RESIDENTES''''''''''''''''''''''''''''''''
-            'End If
-
-            If Not NombreCaseta = "XOCHITEPEC" Or NombreCaseta = "AEROPUERTO" Or NombreCaseta = "EMILIANOZAPATA" Or NombreCaseta = "TRESMARIAS" Then
-
-
-                ''''''''''''''' Monto Minimo''''''''''''''''''''''''''''''''''
-                consulta = "UPDATE ListaValidaciones SET Saldo = ListaTemporal.Saldo, Estatus = ListaTemporal.Estatus, Tipo = ListaTemporal.tipo  FROM ListaTemporal where ListaTemporal.Tag = ListaValidaciones.Tag and ListaValidaciones.EstatusResidente = '00'"
-                cmd = New SqlCommand(consulta, oConexion)
-                cmd.CommandTimeout = 3 * 60
-                cmd.ExecuteNonQuery()
-                consulta = "update ListaValidaciones set saldo = cast(saldo as varchar(8)) where saldo > '99999999'"
-                cmd = New SqlCommand(consulta, oConexion)
-                cmd.CommandTimeout = 3 * 60
-                consulta = "update ListaValidaciones set saldo = cast(saldo as varchar(8)) where saldo > '99999999'"
-                cmd = New SqlCommand(consulta, oConexion)
-                cmd.CommandTimeout = 3 * 60
-                cmd.ExecuteNonQuery()
-                consulta = "update ListaValidaciones set saldo = cast(saldo as varchar(8)) where saldo < 0"
-                cmd = New SqlCommand(consulta, oConexion)
-                cmd.CommandTimeout = 3 * 60
-                cmd.ExecuteNonQuery()
-                consulta = "  INSERT INTO ListaValidaciones SELECT * FROM  lista lT WHERE NOT EXISTS (SELECT LT.TAG FROM ListaValidaciones LI WHERE LT.Tag = LI.Tag)"
-                cmd = New SqlCommand(consulta, oConexion)
-                cmd.CommandTimeout = 3 * 60
-                cmd.ExecuteNonQuery()
-                ''''''''''''''' Fin Minimo'''''''''''''''''''''''''''''''''
-
-            End If
-            consulta = "UPDATE ListaAntifraude SET Saldo = ListaTemporal.Saldo, Estatus = ListaTemporal.Estatus, Tipo = ListaTemporal.tipo  FROM ListaTemporal where ListaTemporal.Tag = ListaAntifraude.Tag and ListaAntifraude.EstatusResidente = '00'"
-            cmd = New SqlCommand(consulta, oConexion)
-            cmd.CommandTimeout = 3 * 60
-            cmd.ExecuteNonQuery()
-
-            consulta = "update ListaAntifraude set saldo = cast(saldo as varchar(8)) where saldo > 99999999"
-            cmd = New SqlCommand(consulta, oConexion)
-            cmd.CommandTimeout = 3 * 60
-            cmd.ExecuteNonQuery()
-            consulta = "update ListaAntifraude set saldo = cast(saldo as varchar(8)) where saldo < 0"
-            cmd = New SqlCommand(consulta, oConexion)
-            cmd.CommandTimeout = 3 * 60
-            cmd.ExecuteNonQuery()
-
-        End If
-
-
-        'agregar los dos 0
-        consulta = " update dbo.Lista set tag = SUBSTRING(tag,0,4) + '00' + SUBSTRING (tag,4,16) where LEN(tag)  = 19  ;"
-        cmd = New SqlCommand(consulta, oConexion)
-        cmd.CommandTimeout = 3 * 60
-        cmd.ExecuteNonQuery()
-        consulta = " update dbo.ListaAntifraude set tag = SUBSTRING(tag,0,4) + '00' + SUBSTRING (tag,4,16) where LEN(tag)  = 19  ;"
-        cmd = New SqlCommand(consulta, oConexion)
-        cmd.CommandTimeout = 3 * 60
-        cmd.ExecuteNonQuery()
-        'consulta = "update lista set saldo = cast(saldo as varchar(8)) where saldo > 99999999"
-        'cmd = New SqlCommand(consulta, oConexion)
-        'cmd.CommandTimeout = 3 * 60
-        'cmd.ExecuteNonQuery()
-
-        If bString = "R" Then
-            consulta = "Truncate Table Listaresidentes"
-            cmd = New SqlCommand(consulta, oConexion)
-            cmd.ExecuteNonQuery()
-            consulta = "bulk insert ListaResidentes from '" & OrigenResidentes & "" & LeerArchivos & "' with ( FORMATFILE = '" & fmtResidentes & "');"
-            cmd = New SqlCommand(consulta, oConexion)
-            cmd.CommandTimeout = 3 * 60
-            cmd.ExecuteNonQuery()
-            ''''''''trunca la primera fila para que el primer tag aparezca ''''''''''
-            If bandera = False Then
-                consulta = "INSERT INTO lista VALUES (0000000000000000000,00,00,999999999999,00,0000000000000000000000000000000000000000000000000);"
-                cmd = New SqlCommand(consulta, oConexion)
-                cmd.ExecuteNonQuery()
+            Dim resultado = cmd.ExecuteScalar()
+            If resultado = Nothing Then
+                bandera = False
+            Else
                 bandera = True
             End If
 
-            consulta = "update lista set saldo = cast(saldo as varchar(8)) where saldo > '99999999'"
+            Dim bString As String
+            bString = Mid(LeerArchivos, 1, 1)
+            'Si la lista es completa borra la anterior 
+            If bString = "C" Then
+                consulta = "TRUNCATE TABLE lista 
+                            TRUNCATE TABLE listaTemporal
+                            TRUNCATE TABLE listaantifraude 
+                            TRUNCATE TABLE ListaValidaciones"
+                cmd = New SqlCommand(consulta, oConexion)
+                cmd.ExecuteNonQuery()
+
+                'inserta la lista que encontro a la base SQL
+                consulta = "bulk insert lista from '" & Origen & "" & LeerArchivos & "' with ( FORMATFILE = '" & fmt & "');"
+                cmd = New SqlCommand(consulta, oConexion)
+                cmd.CommandTimeout = 3 * 60
+                cmd.ExecuteNonQuery()
+                'If bandera = False Then
+                '    consulta = "INSERT INTO lista VALUES (0000000000000000000,00,00,999999999999,00,0000000000000000000000000000000000000000000000000);"
+                '    cmd = New SqlCommand(consulta, oConexion)
+                '    cmd.ExecuteNonQuery()
+                '    consulta = "update Lista set saldo = cast(saldo as varchar(8)) where saldo > '99999999'"
+                '    cmd = New SqlCommand(consulta, oConexion)
+                '    cmd.CommandTimeout = 3 * 60
+                '    cmd.ExecuteNonQuery()
+                '    bandera = True
+                'End If
+                ''''''''Se insertan los residentes '''''''
+
+                If NombreCaseta = "ALPUYECA" Or NombreCaseta = "AEROPUERTO" Or NombreCaseta = "XOCHITEPEC" Or NombreCaseta = "MAC" Then
+
+                    consulta = "INSERT INTO ListaAntifraude SELECT * FROM  ListaResidentes LT WHERE NOT EXISTS (SELECT LT.TAG FROM ListaAntifraude LI WHERE LT.Tag = LI.Tag)"
+                    cmd = New SqlCommand(consulta, oConexion)
+                    cmd.CommandTimeout = 3 * 60
+                    cmd.ExecuteNonQuery()
+
+                End If
+
+                ''''''''''''''' FIN RESIDENTES'''''''''''''''''''''''''''''
+
+
+                ''''''''''''''' Lista Antifraude'''''''''''''''''''''''''''
+
+                consulta = "  INSERT INTO ListaAntifraude SELECT * FROM  lista lT WHERE NOT EXISTS (SELECT LT.TAG FROM ListaAntifraude LI WHERE LT.Tag = LI.Tag)"
+                cmd = New SqlCommand(consulta, oConexion)
+                cmd.CommandTimeout = 3 * 60
+                cmd.ExecuteNonQuery()
+                consulta = "update ListaAntifraude set saldo = cast(saldo as varchar(8)) where saldo > 99999999"
+                cmd = New SqlCommand(consulta, oConexion)
+                cmd.CommandTimeout = 3 * 60
+                cmd.ExecuteNonQuery()
+                consulta = "update ListaAntifraude set saldo = cast(saldo as varchar(8)) where saldo < 0"
+                cmd = New SqlCommand(consulta, oConexion)
+                cmd.CommandTimeout = 3 * 60
+                cmd.ExecuteNonQuery()
+                ''''''''''''''' Fin Antifraude''''''''''''''''''''''''''''''''''
+
+
+                If Not NombreCaseta = "XOCHITEPEC" Or NombreCaseta = "AEROPUERTO" Or NombreCaseta = "EMILIANOZAPATA" Or NombreCaseta = "TRESMARIAS" Then
+
+
+                    ''''''''''''''' Monto Minimo''''''''''''''''''''''''''''''''''
+                    'consulta = "UPDATE ListaValidaciones SET Saldo = ListaTemporal.Saldo, Estatus = ListaTemporal.Estatus, Tipo = ListaTemporal.tipo  FROM ListaTemporal where ListaTemporal.Tag = ListaValidaciones.Tag and ListaValidaciones.EstatusResidente = '00'"
+                    'cmd = New SqlCommand(consulta, oConexion)
+                    'cmd.CommandTimeout = 3 * 60
+                    'cmd.ExecuteNonQuery()
+                    consulta = "  INSERT INTO ListaValidaciones SELECT * FROM  lista lT WHERE NOT EXISTS (SELECT LT.TAG FROM ListaValidaciones LI WHERE LT.Tag = LI.Tag)"
+                    cmd = New SqlCommand(consulta, oConexion)
+                    cmd.CommandTimeout = 3 * 60
+                    cmd.ExecuteNonQuery()
+                    consulta = "update ListaValidaciones set saldo = cast(saldo as varchar(8)) where saldo > 99999999"
+                    cmd = New SqlCommand(consulta, oConexion)
+                    cmd.CommandTimeout = 3 * 60
+                    cmd.ExecuteNonQuery()
+                    consulta = "update ListaValidaciones set saldo = cast(saldo as varchar(8)) where saldo < 0"
+                    cmd = New SqlCommand(consulta, oConexion)
+                    cmd.CommandTimeout = 3 * 60
+                    cmd.ExecuteNonQuery()
+
+                    ''''''''''''''' Fin Minimo'''''''''''''''''''''''''''''''''
+
+                End If
+            End If
+            'Lista con archivos temporales
+            If bString = "I" Then
+                'Borro lista anterior
+
+                consulta = "TRUNCATE TABLE listaTemporal"
+                cmd = New SqlCommand(consulta, oConexion)
+                cmd.ExecuteNonQuery()
+                'inserto nueva lista
+                consulta = "bulk insert listaTemporal from '" & Origen & "" & LeerArchivos & "' with ( FORMATFILE = '" & fmt & "');"
+                cmd = New SqlCommand(consulta, oConexion)
+                cmd.CommandTimeout = 3 * 60
+                cmd.ExecuteNonQuery()
+                'consulta = "update ListaTemporal set saldo = cast(saldo as varchar(8)) where saldo > 99999999"
+                'cmd = New SqlCommand(consulta, oConexion)
+                'cmd.CommandTimeout = 3 * 60
+                'cmd.ExecuteNonQuery()
+                consulta = "update ListaTemporal set saldo = cast(saldo as varchar(8)) where saldo > 99999999"
+                cmd = New SqlCommand(consulta, oConexion)
+                cmd.CommandTimeout = 3 * 60
+                cmd.ExecuteNonQuery()
+                consulta = "update ListaTemporal set saldo = cast(saldo as varchar(8)) where saldo < 0"
+                cmd = New SqlCommand(consulta, oConexion)
+                cmd.CommandTimeout = 3 * 60
+                cmd.ExecuteNonQuery()
+                'uno con la complementaria 
+                consulta = "UPDATE lista SET Saldo = ListaTemporal.Saldo, Estatus = ListaTemporal.Estatus, Tipo = ListaTemporal.tipo  FROM ListaTemporal where ListaTemporal.Tag = Lista.Tag and Lista.EstatusResidente = '00'"
+                cmd = New SqlCommand(consulta, oConexion)
+                cmd.CommandTimeout = 3 * 60
+                cmd.ExecuteNonQuery()
+                'Se insertan los tags que no existian anteriormente 
+                consulta = "INSERT INTO lista SELECT * FROM ListaTemporal lT WHERE NOT EXISTS (SELECT LT.TAG FROM Lista LI WHERE LT.Tag = LI.Tag)"
+                cmd = New SqlCommand(consulta, oConexion)
+                cmd.CommandTimeout = 3 * 60
+                cmd.ExecuteNonQuery()
+
+                'If NombreCaseta = "ALPUYECA" Or NombreCaseta = "AEROPUERTO" Or NombreCaseta = "XOCHITEPEC" Or NombreCaseta = "MAC" Then
+
+                '    '''''''''''''''''''RESIDENTES''''''''''''''''''''''''''''''''
+                '    consulta = "UPDATE listaResidentes SET Saldo = ListaTemporal.Saldo, Estatus = ListaTemporal.Estatus, Tipo = ListaTemporal.tipo  FROM ListaTemporal where ListaTemporal.Tag = ListaResidentes.Tag and ListaResidentes.EstatusResidente = '00'"
+                '    cmd = New SqlCommand(consulta, oConexion)
+                '    cmd.CommandTimeout = 3 * 60
+                '    cmd.ExecuteNonQuery()
+                '    'consulta = "update ListaResidentes set saldo = cast(saldo as varchar(8)) where saldo > 99999999"
+                '    'cmd = New SqlCommand(consulta, oConexion)
+                '    'cmd.CommandTimeout = 3 * 60
+                '    'cmd.ExecuteNonQuery()
+                '    'consulta = "update ListaResidentes set saldo = cast(saldo as varchar(8)) where saldo < 0"
+                '    'cmd = New SqlCommand(consulta, oConexion)
+                '    'cmd.CommandTimeout = 3 * 60
+                '    'cmd.ExecuteNonQuery()
+                '    consulta = "INSERT INTO listaresidentes SELECT * FROM  lista lT WHERE NOT EXISTS (SELECT LT.TAG FROM listaresidentes LI WHERE LT.Tag = LI.Tag)"
+                '    cmd = New SqlCommand(consulta, oConexion)
+                '    cmd.CommandTimeout = 3 * 60
+                '    cmd.ExecuteNonQuery()
+                '    ''''''''''''''' FIN RESIDENTES''''''''''''''''''''''''''''''''
+                'End If
+
+                If Not NombreCaseta = "XOCHITEPEC" Or NombreCaseta = "AEROPUERTO" Or NombreCaseta = "EMILIANOZAPATA" Or NombreCaseta = "TRESMARIAS" Then
+
+
+                    ''''''''''''''' Monto Minimo''''''''''''''''''''''''''''''''''
+                    consulta = "UPDATE ListaValidaciones SET Saldo = ListaTemporal.Saldo, Estatus = ListaTemporal.Estatus, Tipo = ListaTemporal.tipo  FROM ListaTemporal where ListaTemporal.Tag = ListaValidaciones.Tag and ListaValidaciones.EstatusResidente = '00'"
+                    cmd = New SqlCommand(consulta, oConexion)
+                    cmd.CommandTimeout = 3 * 60
+                    cmd.ExecuteNonQuery()
+                    consulta = "update ListaValidaciones set saldo = cast(saldo as varchar(8)) where saldo > '99999999'"
+                    cmd = New SqlCommand(consulta, oConexion)
+                    cmd.CommandTimeout = 3 * 60
+                    consulta = "update ListaValidaciones set saldo = cast(saldo as varchar(8)) where saldo > '99999999'"
+                    cmd = New SqlCommand(consulta, oConexion)
+                    cmd.CommandTimeout = 3 * 60
+                    cmd.ExecuteNonQuery()
+                    consulta = "update ListaValidaciones set saldo = cast(saldo as varchar(8)) where saldo < 0"
+                    cmd = New SqlCommand(consulta, oConexion)
+                    cmd.CommandTimeout = 3 * 60
+                    cmd.ExecuteNonQuery()
+                    consulta = "  INSERT INTO ListaValidaciones SELECT * FROM  lista lT WHERE NOT EXISTS (SELECT LT.TAG FROM ListaValidaciones LI WHERE LT.Tag = LI.Tag)"
+                    cmd = New SqlCommand(consulta, oConexion)
+                    cmd.CommandTimeout = 3 * 60
+                    cmd.ExecuteNonQuery()
+                    ''''''''''''''' Fin Minimo'''''''''''''''''''''''''''''''''
+
+                End If
+                consulta = "UPDATE ListaAntifraude SET Saldo = ListaTemporal.Saldo, Estatus = ListaTemporal.Estatus, Tipo = ListaTemporal.tipo  FROM ListaTemporal where ListaTemporal.Tag = ListaAntifraude.Tag and ListaAntifraude.EstatusResidente = '00'"
+                cmd = New SqlCommand(consulta, oConexion)
+                cmd.CommandTimeout = 3 * 60
+                cmd.ExecuteNonQuery()
+
+                consulta = "update ListaAntifraude set saldo = cast(saldo as varchar(8)) where saldo > 99999999"
+                cmd = New SqlCommand(consulta, oConexion)
+                cmd.CommandTimeout = 3 * 60
+                cmd.ExecuteNonQuery()
+                consulta = "update ListaAntifraude set saldo = cast(saldo as varchar(8)) where saldo < 0"
+                cmd = New SqlCommand(consulta, oConexion)
+                cmd.CommandTimeout = 3 * 60
+                cmd.ExecuteNonQuery()
+
+            End If
+
+
+            'agregar los dos 0
+            consulta = " update dbo.Lista set tag = SUBSTRING(tag,0,4) + '00' + SUBSTRING (tag,4,16) where LEN(tag)  = 19  ;"
             cmd = New SqlCommand(consulta, oConexion)
             cmd.CommandTimeout = 3 * 60
             cmd.ExecuteNonQuery()
-
-            consulta = "update lista set saldo = cast(saldo as varchar(8)) where saldo < 0"
+            consulta = " update dbo.ListaAntifraude set tag = SUBSTRING(tag,0,4) + '00' + SUBSTRING (tag,4,16) where LEN(tag)  = 19  ;"
             cmd = New SqlCommand(consulta, oConexion)
             cmd.CommandTimeout = 3 * 60
             cmd.ExecuteNonQuery()
-
-            'Se insertan los tags que no existian anteriormente 
-            'consulta = "  INSERT INTO listaresidentes SELECT * FROM  lista lT WHERE NOT EXISTS (SELECT LT.TAG FROM listaresidentes LI WHERE LT.Tag = LI.Tag)"
+            'consulta = "update lista set saldo = cast(saldo as varchar(8)) where saldo > 99999999"
             'cmd = New SqlCommand(consulta, oConexion)
             'cmd.CommandTimeout = 3 * 60
             'cmd.ExecuteNonQuery()
 
-            consulta = "INSERT INTO ListaAntifraude SELECT * FROM  listaresidentes lT WHERE NOT EXISTS (SELECT LT.TAG FROM ListaAntifraude LI WHERE LT.Tag = LI.Tag)"
-            cmd = New SqlCommand(consulta, oConexion)
-            cmd.CommandTimeout = 3 * 60
-            cmd.ExecuteNonQuery()
+            If bString = "R" Then
+                consulta = "Truncate Table Listaresidentes"
+                cmd = New SqlCommand(consulta, oConexion)
+                cmd.ExecuteNonQuery()
+                consulta = "bulk insert ListaResidentes from '" & OrigenResidentes & "" & LeerArchivos & "' with ( FORMATFILE = '" & fmtResidentes & "');"
+                cmd = New SqlCommand(consulta, oConexion)
+                cmd.CommandTimeout = 3 * 60
+                cmd.ExecuteNonQuery()
+                ''''''''trunca la primera fila para que el primer tag aparezca ''''''''''
+                If bandera = False Then
+                    consulta = "INSERT INTO lista VALUES (0000000000000000000,00,00,999999999999,00,0000000000000000000000000000000000000000000000000);"
+                    cmd = New SqlCommand(consulta, oConexion)
+                    cmd.ExecuteNonQuery()
+                    bandera = True
+                End If
 
-            'consulta = "update ListaAntifraude set saldo = cast(saldo as varchar(8)) where saldo > 99999999"
-            'cmd = New SqlCommand(consulta, oConexion)
-            'cmd.CommandTimeout = 3 * 60
-            'cmd.ExecuteNonQuery()
+                consulta = "update lista set saldo = cast(saldo as varchar(8)) where saldo > '99999999'"
+                cmd = New SqlCommand(consulta, oConexion)
+                cmd.CommandTimeout = 3 * 60
+                cmd.ExecuteNonQuery()
 
-            'consulta = "update ListaAntifraude set saldo = cast(saldo as varchar(8)) where saldo > '99999999'"
-            'cmd = New SqlCommand(consulta, oConexion)
-            'cmd.CommandTimeout = 3 * 60
-            'cmd.ExecuteNonQuery()
+                consulta = "update lista set saldo = cast(saldo as varchar(8)) where saldo < 0"
+                cmd = New SqlCommand(consulta, oConexion)
+                cmd.CommandTimeout = 3 * 60
+                cmd.ExecuteNonQuery()
 
-        End If
+                'Se insertan los tags que no existian anteriormente 
+                'consulta = "  INSERT INTO listaresidentes SELECT * FROM  lista lT WHERE NOT EXISTS (SELECT LT.TAG FROM listaresidentes LI WHERE LT.Tag = LI.Tag)"
+                'cmd = New SqlCommand(consulta, oConexion)
+                'cmd.CommandTimeout = 3 * 60
+                'cmd.ExecuteNonQuery()
+
+                consulta = "INSERT INTO ListaAntifraude SELECT * FROM  listaresidentes lT WHERE NOT EXISTS (SELECT LT.TAG FROM ListaAntifraude LI WHERE LT.Tag = LI.Tag)"
+                cmd = New SqlCommand(consulta, oConexion)
+                cmd.CommandTimeout = 3 * 60
+                cmd.ExecuteNonQuery()
+
+                'consulta = "update ListaAntifraude set saldo = cast(saldo as varchar(8)) where saldo > 99999999"
+                'cmd = New SqlCommand(consulta, oConexion)
+                'cmd.CommandTimeout = 3 * 60
+                'cmd.ExecuteNonQuery()
+
+                'consulta = "update ListaAntifraude set saldo = cast(saldo as varchar(8)) where saldo > '99999999'"
+                'cmd = New SqlCommand(consulta, oConexion)
+                'cmd.CommandTimeout = 3 * 60
+                'cmd.ExecuteNonQuery()
+
+            End If
 
 
-        'crea el archivo lstbind
+            'crea el archivo lstbind
 
 
 
-        Dim bString2 As String
-        bString2 = Mid(LeerArchivos, 1, 1)
-        'se valida el nombre del archivo procesado para mandar el mensaje de que se actualizo 
-        If bString2 = "C" Or bString2 = "I" Or bString2 = "R" Then
+            Dim bString2 As String
+            bString2 = Mid(LeerArchivos, 1, 1)
+            'se valida el nombre del archivo procesado para mandar el mensaje de que se actualizo 
+            If bString2 = "C" Or bString2 = "I" Or bString2 = "R" Then
 
-            consulta = "INSERT INTO dbo.historial (Archivo, fecha, extension) VALUES ('" & LeerArchivos & "' , '" & DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") & "'," & extension & ");"
-            'consulta = "INSERT INTO dbo.historial (Archivo, fecha, extension) VALUES ('" & LeerArchivos & "' , '" & DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss") & "'," & extension & ");"
-            cmd = New SqlCommand(consulta, oConexion)
-            cmd.ExecuteNonQuery()
-            hayarchivos = True
-        End If
-        'insertar a la base historial de archivos creados
+                'consulta = "INSERT INTO dbo.historial (Archivo, fecha, extension) VALUES ('" & LeerArchivos & "' , '" & DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") & "'," & extension & ");"
+                consulta = "INSERT INTO dbo.historial (Archivo, fecha, extension) VALUES ('" & LeerArchivos & "' , '" & DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss") & "'," & extension & ");"
+                cmd = New SqlCommand(consulta, oConexion)
+                cmd.ExecuteNonQuery()
+                hayarchivos = True
+            End If
+            'insertar a la base historial de archivos creados
+        Catch ex As Exception
+            Dim st As StackTrace = New StackTrace(ex, True)
+            Dim frame As StackFrame = st.GetFrame(st.FrameCount - 1)
+
+
+            Dim path As String = "c:\temporal\LogsListas.txt"
+            Dim line As Integer = frame.GetFileLineNumber()
+            If File.Exists(path) Then
+
+                Using write As StreamWriter = New StreamWriter(path, True)
+                    write.Write(DateTime.Now & " / Numero Linea: " & line & "  / " & ex.Message & vbCrLf)
+                End Using
+            Else
+
+                ' Create or overwrite the file.
+                Dim fs As FileStream = File.Create(path)
+                ' Add text to the file.
+                Dim info As Byte() = New UTF8Encoding(True).GetBytes(ex.Message)
+                fs.Write(info, 0, info.Length)
+                fs.Close()
+            End If
+            Me.Close()
+        End Try
+
 
     End Sub
 
@@ -652,120 +682,142 @@ NumeroLineas:
 
 
     Sub ArchivoAntifraude()
-
-        exists = System.IO.Directory.Exists("c:\temporal\Antifraude\")
-        If exists = False Then
-            System.IO.Directory.CreateDirectory("c:\temporal\Antifraude\")
-        End If
-        ConexionOracle.Open()
-
-        'consultaOracle = "Select contenu_iso from transaction where date_transaction >= TO_DATE('" & Format(DateTime.Now.AddMinutes(-minutos), "yyyyMMddHHmmss") & "','YYYYMMDDHH24MISS') and ID_OBS_PASSAGE = 0 and ID_PAIEMENT = 15 group by CONTENU_ISO HAVING count(*)>" & cruzes
-        consultaOracle = "Select contenu_iso from transaction where date_transaction >= TO_DATE('" & Format(DateTime.Now.AddMinutes(-minutos), "yyyyMMddHHmmss") & "','YYYYMMDDHH24MISS') and ID_OBS_PASSAGE = 0 and ID_PAIEMENT = 15 group by CONTENU_ISO HAVING count(*)>" & cruzes
-
-
-        Dim tag As String
-
-        cmdOracle.CommandText = consultaOracle
-        cmdOracle.Connection = ConexionOracle
-        Dim dataReader As OracleDataReader = cmdOracle.ExecuteReader()
-        'cambiar a estado invalido tag'
-        While dataReader.Read
-            tag = dataReader.Item("contenu_iso")
-            tag = Trim(Mid(tag, 1, 16))
-            consulta = "select tag from  listanegra where tag = '" & tag & "'"
-            cmd = New SqlCommand(consulta, oConexion)
-            cmd.CommandTimeout = 3 * 60
-            Dim taglistanegra = cmd.ExecuteScalar()
-
-            If taglistanegra = "" Then
-
-                consulta = "update listaantifraude set Estatus = '00' where tag = '" & tag & "'"
-                cmd = New SqlCommand(consulta, oConexion)
-                cmd.CommandTimeout = 3 * 60
-                cmd.ExecuteNonQuery()
-
-                Try
-                    consulta = "insert into ListaNegra values ('" & tag & "', '" & Format(DateTime.Now, "yyyy-MM-dd HH:mm:ss") & "')"
-                Catch ex As SqlClient.SqlException
-
-                End Try
-                cmd = New SqlCommand(consulta, oConexion)
-                cmd.CommandTimeout = 3 * 60
-                cmd.ExecuteNonQuery()
-                banderaAntifraude = True
-
-
-            End If
-        End While
-        dataReader.Close()
-        Dim array As New ArrayList()
-        ConexionOracle.Close()
-        'quitar de la regla
         Try
+            exists = System.IO.Directory.Exists("c:\temporal\Antifraude\")
+            If exists = False Then
+                System.IO.Directory.CreateDirectory("c:\temporal\Antifraude\")
+            End If
+            ConexionOracle.Open()
+
+            'consultaOracle = "Select contenu_iso from transaction where date_transaction >= TO_DATE('" & Format(DateTime.Now.AddMinutes(-minutos), "yyyyMMddHHmmss") & "','YYYYMMDDHH24MISS') and ID_OBS_PASSAGE = 0 and ID_PAIEMENT = 15 group by CONTENU_ISO HAVING count(*)>" & cruzes
+            consultaOracle = "Select contenu_iso from transaction where date_transaction >= TO_DATE('" & Format(DateTime.Now.AddMinutes(-minutos), "yyyyMMddHHmmss") & "','YYYYMMDDHH24MISS') and ID_OBS_PASSAGE = 0 and ID_PAIEMENT = 15 group by CONTENU_ISO HAVING count(*)>" & cruzes
+
+
+            Dim tag As String
+
+            cmdOracle.CommandText = consultaOracle
+            cmdOracle.Connection = ConexionOracle
+            Dim dataReader As OracleDataReader = cmdOracle.ExecuteReader()
+            'cambiar a estado invalido tag'
+            While dataReader.Read
+                tag = dataReader.Item("contenu_iso")
+                tag = Trim(Mid(tag, 1, 16))
+                consulta = "select tag from  listanegra where tag = '" & tag & "'"
+                cmd = New SqlCommand(consulta, oConexion)
+                cmd.CommandTimeout = 3 * 60
+                Dim taglistanegra = cmd.ExecuteScalar()
+
+                If taglistanegra = "" Then
+
+                    consulta = "update listaantifraude set Estatus = '00' where tag = '" & tag & "'"
+                    cmd = New SqlCommand(consulta, oConexion)
+                    cmd.CommandTimeout = 3 * 60
+                    cmd.ExecuteNonQuery()
+
+                    Try
+                        consulta = "insert into ListaNegra values ('" & tag & "', '" & Format(DateTime.Now, "yyyy-MM-dd HH:mm:ss") & "')"
+                    Catch ex As SqlClient.SqlException
+
+                    End Try
+                    cmd = New SqlCommand(consulta, oConexion)
+                    cmd.CommandTimeout = 3 * 60
+                    cmd.ExecuteNonQuery()
+                    banderaAntifraude = True
+
+
+                End If
+            End While
+            dataReader.Close()
+            Dim array As New ArrayList()
+            ConexionOracle.Close()
+            'quitar de la regla
+            Try
 
 InicioCatch:
-            If BanderaSQL = True Then
-                consulta = "Select tag from ListaNegra where Fecha <= '" & Format(DateTime.Now.AddMinutes(-minutos), "yyyy-MM-dd HH:mm:ss") & "'"
-            Else
-                consulta = "Select tag from ListaNegra where Fecha <= '" & Format(DateTime.Now.AddMinutes(-minutos), "yyyy-dd-MM HH:mm:ss") & "'"
-            End If
-
-            cmd = New SqlCommand(consulta, oConexion)
-            cmd.CommandTimeout = 3 * 60
-
-            Datareadersql = cmd.ExecuteReader()
-
-
-            While Datareadersql.Read()
-                array.Add(Datareadersql.Item("tag"))
-            End While
-            Datareadersql.Close()
-            For Each tag In array
-                consulta = "update listaantifraude set Estatus = '01' where tag = '" & tag & "'"
-                cmd = New SqlCommand(consulta, oConexion)
-                cmd.ExecuteNonQuery()
-                consulta = "IF NOT EXISTS (SELECT tAG FROM ListaNegraHistorico WHERE tag ='" & tag & "' AND Fecha < '" & Format(DateTime.Now.AddDays(-1), "yyyy-MM-dd HH:mm:ss") & "' ) insert into ListaNegraHistorico values('" & tag & "','" & Format(DateTime.Now, "yyyy-MM-dd HH:mm:ss") & "')"
-                cmd = New SqlCommand(consulta, oConexion)
-                cmd.CommandTimeout = 3 * 60
-                cmd.ExecuteNonQuery()
-                consulta = " DELETE From ListaNegra Where  tag = '" & tag & "'"
-                cmd = New SqlCommand(consulta, oConexion)
-                cmd.CommandTimeout = 3 * 60
-                cmd.ExecuteNonQuery()
-                'no va porque no hay modificacion en la lista antifraude
-                banderaAntifraude = True
-            Next
-        Catch ex As SqlClient.SqlException
-            Datareadersql.Close()
-            If Contador <= 2 Then
-                Contador = Contador + 1
-                BanderaSQL = False
-                GoTo InicioCatch
-            Else
-                Dim path As String = "c:\temporal\LogsListas.txt"
-                If File.Exists(path) Then
-                    Using write As StreamWriter = New StreamWriter(path, True)
-                        write.Write(DateTime.Now & " / " & ex.Message & vbCrLf)
-                    End Using
+                If BanderaSQL = True Then
+                    consulta = "Select tag from ListaNegra where Fecha <= '" & Format(DateTime.Now.AddMinutes(-minutos), "yyyy-MM-dd HH:mm:ss") & "'"
                 Else
-                    Dim fs As FileStream = File.Create(path)
-                    Dim info As Byte() = New UTF8Encoding(True).GetBytes(ex.Message)
-                    fs.Write(info, 0, info.Length)
-                    fs.Close()
+                    consulta = "Select tag from ListaNegra where Fecha <= '" & Format(DateTime.Now.AddMinutes(-minutos), "yyyy-dd-MM HH:mm:ss") & "'"
                 End If
-                Me.Close()
+
+                cmd = New SqlCommand(consulta, oConexion)
+                cmd.CommandTimeout = 3 * 60
+
+                Datareadersql = cmd.ExecuteReader()
+
+
+                While Datareadersql.Read()
+                    array.Add(Datareadersql.Item("tag"))
+                End While
+                Datareadersql.Close()
+                For Each tag In array
+                    consulta = "update listaantifraude set Estatus = '01' where tag = '" & tag & "'"
+                    cmd = New SqlCommand(consulta, oConexion)
+                    cmd.ExecuteNonQuery()
+                    consulta = "IF NOT EXISTS (SELECT tAG FROM ListaNegraHistorico WHERE tag ='" & tag & "' AND Fecha < '" & Format(DateTime.Now.AddDays(-1), "yyyy-MM-dd HH:mm:ss") & "' ) insert into ListaNegraHistorico values('" & tag & "','" & Format(DateTime.Now, "yyyy-MM-dd HH:mm:ss") & "')"
+                    cmd = New SqlCommand(consulta, oConexion)
+                    cmd.CommandTimeout = 3 * 60
+                    cmd.ExecuteNonQuery()
+                    consulta = " DELETE From ListaNegra Where  tag = '" & tag & "'"
+                    cmd = New SqlCommand(consulta, oConexion)
+                    cmd.CommandTimeout = 3 * 60
+                    cmd.ExecuteNonQuery()
+                    'no va porque no hay modificacion en la lista antifraude
+                    banderaAntifraude = True
+                Next
+            Catch ex As SqlClient.SqlException
+                Datareadersql.Close()
+                If Contador <= 2 Then
+                    Contador = Contador + 1
+                    BanderaSQL = False
+                    GoTo InicioCatch
+                Else
+                    Dim path As String = "c:\temporal\LogsListas.txt"
+                    If File.Exists(path) Then
+                        Using write As StreamWriter = New StreamWriter(path, True)
+                            write.Write(DateTime.Now & " / " & ex.Message & vbCrLf)
+                        End Using
+                    Else
+                        Dim fs As FileStream = File.Create(path)
+                        Dim info As Byte() = New UTF8Encoding(True).GetBytes(ex.Message)
+                        fs.Write(info, 0, info.Length)
+                        fs.Close()
+                    End If
+                    Me.Close()
+                End If
+            End Try
+
+            If banderaAntifraude = True Then
+                'genera los archivos '
+                consulta = " Exec Master ..xp_Cmdshell 'bcp ""Select tag + REPLICATE ('' '', 24 - DATALENGTH(tag)) + ( tipo + Estatus  + REPLICATE (''0'', 8 - DATALENGTH(Saldo)) + saldo + SUBSTRING(tag,0,14) + REPLICATE ('' '', 19 - DATALENGTH(SUBSTRING(tag,0,14)))) + (EstatusResidente + ResidenteComplementario)  FROM Telepeaje.dbo.ListaAntifraude  order by tag asc""  queryout ""c:\temporal\Antifraude\LSTABINT." & extension & """ -S " & ServidorSql & " -T -c -t\0'"
+                cmd = New SqlCommand(consulta, oConexion)
+                cmd.CommandTimeout = 3 * 60
+                cmd.ExecuteNonQuery()
+
             End If
+        Catch ex As Exception
+            Dim st As StackTrace = New StackTrace(ex, True)
+            Dim frame As StackFrame = st.GetFrame(st.FrameCount - 1)
+
+
+            Dim path As String = "c:\temporal\LogsListas.txt"
+            Dim line As Integer = frame.GetFileLineNumber()
+            If File.Exists(path) Then
+
+                Using write As StreamWriter = New StreamWriter(path, True)
+                    write.Write(DateTime.Now & " / Numero Linea: " & line & "  / " & ex.Message & vbCrLf)
+                End Using
+            Else
+
+                ' Create or overwrite the file.
+                Dim fs As FileStream = File.Create(path)
+                ' Add text to the file.
+                Dim info As Byte() = New UTF8Encoding(True).GetBytes(ex.Message)
+                fs.Write(info, 0, info.Length)
+                fs.Close()
+            End If
+            Me.Close()
         End Try
-
-        If banderaAntifraude = True Then
-            'genera los archivos '
-            consulta = " Exec Master ..xp_Cmdshell 'bcp ""Select tag + REPLICATE ('' '', 24 - DATALENGTH(tag)) + ( tipo + Estatus  + REPLICATE (''0'', 8 - DATALENGTH(Saldo)) + saldo + SUBSTRING(tag,0,14) + REPLICATE ('' '', 19 - DATALENGTH(SUBSTRING(tag,0,14)))) + (EstatusResidente + ResidenteComplementario)  FROM Telepeaje.dbo.ListaAntifraude  order by tag asc""  queryout ""c:\temporal\Antifraude\LSTABINT." & extension & """ -S " & ServidorSql & " -T -c -t\0'"
-            cmd = New SqlCommand(consulta, oConexion)
-            cmd.CommandTimeout = 3 * 60
-            cmd.ExecuteNonQuery()
-
-        End If
-
 
 
     End Sub

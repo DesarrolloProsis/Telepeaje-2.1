@@ -47,9 +47,8 @@
     <OptionInfer>On</OptionInfer>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="oracle.dataaccess, Version=4.122.1.0, Culture=neutral, PublicKeyToken=89b483f429c47342, processorArchitecture=AMD64">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>\\Mac\Home\Desktop\oracle.dataaccess.dll</HintPath>
+    <Reference Include="Oracle.DataAccess, Version=4.121.1.0, Culture=neutral, PublicKeyToken=89b483f429c47342, processorArchitecture=x86">
+      <HintPath>bin\Debug\Oracle.DataAccess.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
